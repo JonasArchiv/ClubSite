@@ -49,6 +49,15 @@ class User(db.Model):
     author = db.Column(db.Boolean, default=False)
 
 
+class Project(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.String(500), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    author = relationship("User", backref="projects")
+
+
 class Downloads(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(50), nullable=False)
@@ -146,6 +155,48 @@ def register():
 def logout():
     session.pop('username', None)
     return redirect(url_for('index'))
+
+
+@app.route('/projects')
+def projects():
+    all_projects = Project.query.all()
+    return render_template('projects.html', projects=all_projects)
+
+
+@app.route('/project/<int:project_id>')
+def project_detail(project_id):
+    project = Project.query.get_or_404(project_id)
+    return render_template('project_detail.html', project=project)
+
+
+@app.route('/project/add', methods=['GET', 'POST'])
+def add_project():
+    if request.method == 'POST':
+        title = request.form['title']
+        description = request.form['description']
+        download_option = request.form['download_option']
+        download_id = None
+
+        if download_option == 'existing':
+            download_id = request.form['download_id']
+        elif download_option == 'new':
+            file = request.files['file']
+            if file:
+                filename = secure_filename(file.filename)
+                file_path = os.path.join(app.root_path, '/static/downloads', filename)
+                file.save(file_path)
+                new_download = Downloads(title=title, description=description, file=filename)
+                db.session.add(new_download)
+                db.session.commit()
+                download_id = new_download.id
+
+        new_project = Project(title=title, description=description, download_id=download_id)
+        db.session.add(new_project)
+        db.session.commit()
+        return redirect(url_for('projects'))
+
+    downloads = Downloads.query.all()
+    return render_template('add_project.html', downloads=downloads)
 
 
 if __name__ == '__main__':
