@@ -92,16 +92,16 @@ def add_download():
         file = request.files['file']
         if file and title and description:
             filename = secure_filename(file.filename)
-            file_path = os.path.join('/static/downloads', filename)
+            file_path = os.path.join(app.root_path, 'static/downloads', filename)
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
             file.save(file_path)
             new_download = Downloads(title=title, description=description, file=filename)
             db.session.add(new_download)
             db.session.commit()
-            flash('Download successfully added')
+            flash('Download erfolgreich hinzugefügt')
             return redirect(url_for('index'))
         else:
-            flash('Missing information')
-
+            flash('Fehlende Informationen')
     return render_template('add_download.html')
 
 
@@ -110,9 +110,8 @@ def download(download_id):
     download = Downloads.query.get(download_id)
     if download is None:
         return "Download not found", 404
-    directory = '/static/downloads'
+    directory = os.path.join(app.root_path, 'static/downloads')
     filename = download.file
-    file_path = os.path.join(directory, filename)
     try:
         return send_from_directory(directory, filename, as_attachment=True)
     except FileNotFoundError:
@@ -183,7 +182,8 @@ def add_project():
             file = request.files['file']
             if file:
                 filename = secure_filename(file.filename)
-                file_path = os.path.join(app.root_path, '/static/downloads', filename)
+                file_path = os.path.join(app.root_path, 'static/downloads', filename)
+                os.makedirs(os.path.dirname(file_path), exist_ok=True)
                 file.save(file_path)
                 new_download = Downloads(title=title, description=description, file=filename)
                 db.session.add(new_download)

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Neues Projekt hinzufügen - {{ app_name }}</title>
+    <link rel="stylesheet" href="/static/bootstrap-5.3.3-dist/css/bootstrap.min.css">
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const downloadOption = document.getElementById('download_option');
+            const existingDownloadId = document.getElementById('existing_download_id');
+            const newDownloadFile = document.getElementById('new_download_file');
+
+            function toggleDownloadOption() {
+                if(downloadOption.value === 'existing') {
+                    existingDownloadId.style.display = '';
+                    newDownloadFile.style.display = 'none';
+                } else if(downloadOption.value === 'new') {
+                    existingDownloadId.style.display = 'none';
+                    newDownloadFile.style.display = '';
+                } else {
+                    existingDownloadId.style.display = 'none';
+                    newDownloadFile.style.display = 'none';
+                }
+            }
+
+            downloadOption.addEventListener('change', toggleDownloadOption);
+            toggleDownloadOption(); // Initial call to set the correct display state
+        });
+    </script>
+</head>
+<body>
+    <div class="container mt-5">
+        <h2>Neues Projekt hinzufügen</h2>
+        <form action="/project/add" method="post" enctype="multipart/form-data">
+            <!-- Title Input -->
+            <div class="mb-3">
+                <label for="title" class="form-label">Titel:</label>
+                <input type="text" class="form-control" id="title" name="title" required>
+            </div>
+            <div class="mb-3">
+                <label for="description" class="form-label">Beschreibung:</label>
+                <textarea class="form-control" id="description" name="description" required></textarea>
+            </div>
+            <div class="mb-3">
+                <label for="download_option" class="form-label">Download-Option:</label>
+                <select class="form-select" id="download_option" name="download_option">
+                    <option value="none">Kein Download</option>
+                    <option value="existing">Bestehender Download</option>
+                    <option value="new">Neuer Download</option>
+                </select>
+            </div>
+            <div class="mb-3" id="existing_download_id" style="display: none;">
+                <label for="download_id" class="form-label">Download-ID:</label>
+                <select class="form-select" id="download_id" name="download_id">
+                    {% for download in downloads %}
+                    <option value="{{ download.id }}">{{ download.title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3" id="new_download_file" style="display: none;">
+                <label for="file" class="form-label">Datei:</label>
+                <input type="file" class="form-control" id="file" name="file">
+            </div>
+            <button type="submit" class="btn btn-primary">Projekt hinzufügen</button>
+        </form>
+    </div>
+</body>
+</html>
