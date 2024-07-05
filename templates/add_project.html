@@ -24,7 +24,7 @@
             }
 
             downloadOption.addEventListener('change', toggleDownloadOption);
-            toggleDownloadOption(); // Initial call to set the correct display state
+            toggleDownloadOption();
         });
     </script>
 </head>
@@ -40,6 +40,10 @@
             <div class="mb-3">
                 <label for="description" class="form-label">Beschreibung:</label>
                 <textarea class="form-control" id="description" name="description" required></textarea>
+            </div>
+            <div class="mb-3">
+                <label for="project_link" class="form-label">Projekt Link (optional):</label>
+                <input type="url" class="form-control" id="project_link" name="project_link">
             </div>
             <div class="mb-3">
                 <label for="download_option" class="form-label">Download-Option:</label>

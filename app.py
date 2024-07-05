@@ -55,6 +55,7 @@ class Project(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
     description = db.Column(db.String(500), nullable=False)
+    project_link = db.Column(db.String(200), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     author = relationship("User", backref="projects")
@@ -119,11 +120,11 @@ def add_download():
 
 @app.route('/download/<int:download_id>')
 def download(download_id):
-    download = Downloads.query.get(download_id)
-    if download is None:
+    requested_download = Downloads.query.get(download_id)
+    if requested_download is None:
         return "Download not found", 404
     directory = os.path.join(app.root_path, app.config['UPLOAD_FOLDER_DOWNLOADS'])
-    filename = download.file
+    filename = requested_download.file
     try:
         return send_from_directory(directory, filename, as_attachment=True)
     except FileNotFoundError:
@@ -185,6 +186,7 @@ def add_project():
     if request.method == 'POST':
         title = request.form['title']
         description = request.form['description']
+        project_link = request.form.get('project_link')
         download_option = request.form['download_option']
         download_id = None
 
@@ -202,7 +204,7 @@ def add_project():
                 db.session.commit()
                 download_id = new_download.id
 
-        new_project = Project(title=title, description=description, download_id=download_id)
+        new_project = Project(title=title, description=description, download_id=download_id, project_link=project_link)
         db.session.add(new_project)
         db.session.commit()
         return redirect(url_for('projects'))
