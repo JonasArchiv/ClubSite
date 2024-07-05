@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Newsdetails - {{ news_item.title }}</title>
+    <link rel="stylesheet" href="/static/bootstrap-5.3.3-dist/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h2>{{ news_item.title }}</h2>
+        <img src="{{ url_for('static', filename='uploads/' ~ news_item.image_path) }}" class="img-fluid" alt="{{ news_item.title }}">
+        <p>{{ news_item.description }}</p>
+        <a href="/news" class="btn btn-secondary">Zurück zu News</a>
+    </div>
+</body>
+</html>

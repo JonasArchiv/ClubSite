@@ -58,7 +58,9 @@ class Project(db.Model):
     project_link = db.Column(db.String(200), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    author = relationship("User", backref="projects")
+    author = db.relationship("User", backref="projects")
+    download_id = db.Column(db.Integer, db.ForeignKey('downloads.id'), nullable=True)
+    download = db.relationship("Downloads", backref="projects")
 
 
 class Downloads(db.Model):
@@ -75,7 +77,7 @@ class News(db.Model):
     description = db.Column(db.String(500), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    author = relationship("User", backref="news")
+    author = db.relationship("User", backref="news")
 
 
 def create_default_user():
@@ -213,6 +215,38 @@ def add_project():
     return render_template('add_project.html', downloads=downloads)
 
 
+@app.route('/project/edit/<int:project_id>', methods=['GET', 'POST'])
+@requires_permission('author')
+def edit_project(project_id):
+    project = Project.query.get_or_404(project_id)
+    downloads = Downloads.query.all()
+
+    if request.method == 'POST':
+        project.title = request.form['title']
+        project.description = request.form['description']
+        project.project_link = request.form.get('project_link')
+        download_option = request.form['download_option']
+
+        if download_option == 'existing':
+            project.download_id = request.form['download_id']
+        elif download_option == 'new':
+            file = request.files['file']
+            if file:
+                filename = secure_filename(file.filename)
+                file_path = os.path.join(app.config['UPLOAD_FOLDER_DOWNLOADS'], filename)
+                os.makedirs(os.path.dirname(file_path), exist_ok=True)
+                file.save(file_path)
+                new_download = Downloads(title=project.title, description=project.description, file=filename)
+                db.session.add(new_download)
+                db.session.commit()
+                project.download_id = new_download.id
+
+        db.session.commit()
+        return redirect(url_for('projects'))
+
+    return render_template('edit_project.html', project=project, downloads=downloads)
+
+
 @app.route('/news/add', methods=['GET', 'POST'])
 @requires_permission('author')
 def add_news():
@@ -242,6 +276,28 @@ def list_news():
 def news_detail(news_id):
     news_item = News.query.get_or_404(news_id)
     return render_template('news_detail.html', news_item=news_item)
+
+
+@app.route('/news/edit/<int:news_id>', methods=['GET', 'POST'])
+@requires_permission('author')
+def edit_news(news_id):
+    news_item = News.query.get_or_404(news_id)
+
+    if request.method == 'POST':
+        news_item.title = request.form['title']
+        news_item.description = request.form['description']
+        file = request.files['image']
+        if file:
+            filename = secure_filename(file.filename)
+            file_path = os.path.join(app.config['UPLOAD_FOLDER_PICTS'], filename)
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            file.save(file_path)
+            news_item.image_path = filename
+
+        db.session.commit()
+        return redirect(url_for('list_news'))
+
+    return render_template('edit_news.html', news_item=news_item)
 
 
 if __name__ == '__main__':
