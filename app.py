@@ -12,6 +12,8 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ECHO'] = True
+app.config['UPLOAD_FOLDER_DOWNLOADS'] = '/static/downloads'
+app.config['UPLOAD_FOLDER_PICTS'] = '/static/picts'
 app.secret_key = 'secret_salt'  # Change this on Public build!
 db = SQLAlchemy(app)
 
@@ -65,6 +67,16 @@ class Downloads(db.Model):
     file = db.Column(db.String(100), nullable=False)
 
 
+class News(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(100), nullable=False)
+    image_path = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.String(500), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    author_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    author = relationship("User", backref="news")
+
+
 def create_default_user():
     admin_user = User(username='admin', password=generate_password_hash('password'), leader=True, author=True)
     db.session.add(admin_user)
@@ -84,7 +96,7 @@ def index():
 
 
 @app.route('/add_download', methods=['GET', 'POST'])
-@requires_permission('leader')
+@requires_permission('author')
 def add_download():
     if request.method == 'POST':
         title = request.form['title']
@@ -92,7 +104,7 @@ def add_download():
         file = request.files['file']
         if file and title and description:
             filename = secure_filename(file.filename)
-            file_path = os.path.join(app.root_path, 'static/downloads', filename)
+            file_path = os.path.join(app.config['UPLOAD_FOLDER_DOWNLOADS'], filename)
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
             file.save(file_path)
             new_download = Downloads(title=title, description=description, file=filename)
@@ -110,7 +122,7 @@ def download(download_id):
     download = Downloads.query.get(download_id)
     if download is None:
         return "Download not found", 404
-    directory = os.path.join(app.root_path, 'static/downloads')
+    directory = os.path.join(app.root_path, app.config['UPLOAD_FOLDER_DOWNLOADS'])
     filename = download.file
     try:
         return send_from_directory(directory, filename, as_attachment=True)
@@ -182,7 +194,7 @@ def add_project():
             file = request.files['file']
             if file:
                 filename = secure_filename(file.filename)
-                file_path = os.path.join(app.root_path, 'static/downloads', filename)
+                file_path = os.path.join(app.config['UPLOAD_FOLDER_DOWNLOADS'], filename)
                 os.makedirs(os.path.dirname(file_path), exist_ok=True)
                 file.save(file_path)
                 new_download = Downloads(title=title, description=description, file=filename)
@@ -197,6 +209,37 @@ def add_project():
 
     downloads = Downloads.query.all()
     return render_template('add_project.html', downloads=downloads)
+
+
+@app.route('/news/add', methods=['GET', 'POST'])
+@requires_permission('author')
+def add_news():
+    if request.method == 'POST':
+        title = request.form['title']
+        description = request.form['description']
+        file = request.files['image']
+        if file and title and description:
+            filename = secure_filename(file.filename)
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            file.save(file_path)
+            new_news = News(title=title, description=description, image_path=filename, author_id=session['user_id'])
+            db.session.add(new_news)
+            db.session.commit()
+            return redirect(url_for('list_news'))
+    return render_template('add_news.html')
+
+
+@app.route('/news')
+def list_news():
+    news_items = News.query.order_by(News.created_at.desc()).all()
+    return render_template('list_news.html', news_items=news_items)
+
+
+@app.route('/news/<int:news_id>')
+def news_detail(news_id):
+    news_item = News.query.get_or_404(news_id)
+    return render_template('news_detail.html', news_item=news_item)
 
 
 if __name__ == '__main__':
