@@ -14,6 +14,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ECHO'] = True
 app.config['UPLOAD_FOLDER_DOWNLOADS'] = '/static/downloads'
 app.config['UPLOAD_FOLDER_PICTS'] = '/static/picts'
+app.config['PROFILE_PICTS'] = '/static/picts/profile'
 app.secret_key = 'secret_salt'  # Change this on Public build!
 db = SQLAlchemy(app)
 
@@ -80,6 +81,14 @@ class News(db.Model):
     author = db.relationship("User", backref="news")
 
 
+class TeamMember(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), nullable=False)
+    role = db.Column(db.String(50), nullable=False)
+    profile_image = db.Column(db.String(100), nullable=False)
+    visible = db.Column(db.Boolean, default=True)
+
+
 def create_default_user():
     admin_user = User(username='admin', password=generate_password_hash('password'), leader=True, author=True)
     db.session.add(admin_user)
@@ -117,7 +126,7 @@ def add_download():
             return redirect(url_for('index'))
         else:
             flash('Fehlende Informationen')
-    return render_template('add_download.html')
+    return render_template('add_download.html', app_name=app_name)
 
 
 @app.route('/download/<int:download_id>')
@@ -145,7 +154,7 @@ def login():
             session['username'] = user_in_session.username
             return redirect(url_for('index'))
         else:
-            return render_template(login.html, app_name=app_name, error='Username or Password is wrong.')
+            return render_template('login.html', app_name=app_name, error='Username or Password is wrong.')
     return render_template('login.html', app_name=app_name)
 
 
@@ -174,13 +183,13 @@ def logout():
 @app.route('/projects')
 def projects():
     all_projects = Project.query.all()
-    return render_template('projects.html', projects=all_projects)
+    return render_template('projects.html', projects=all_projects, app_name=app_name)
 
 
 @app.route('/project/<int:project_id>')
 def project_detail(project_id):
     project = Project.query.get_or_404(project_id)
-    return render_template('project_detail.html', project=project)
+    return render_template('project_detail.html', project=project, app_name=app_name)
 
 
 @app.route('/project/add', methods=['GET', 'POST'])
@@ -212,7 +221,7 @@ def add_project():
         return redirect(url_for('projects'))
 
     downloads = Downloads.query.all()
-    return render_template('add_project.html', downloads=downloads)
+    return render_template('add_project.html', downloads=downloads, app_name=app_name)
 
 
 @app.route('/project/edit/<int:project_id>', methods=['GET', 'POST'])
@@ -244,7 +253,7 @@ def edit_project(project_id):
         db.session.commit()
         return redirect(url_for('projects'))
 
-    return render_template('edit_project.html', project=project, downloads=downloads)
+    return render_template('edit_project.html', project=project, downloads=downloads, app_name=app_name)
 
 
 @app.route('/news/add', methods=['GET', 'POST'])
@@ -263,19 +272,19 @@ def add_news():
             db.session.add(new_news)
             db.session.commit()
             return redirect(url_for('list_news'))
-    return render_template('add_news.html')
+    return render_template('add_news.html', app_name=app_name)
 
 
 @app.route('/news')
 def list_news():
     news_items = News.query.order_by(News.created_at.desc()).all()
-    return render_template('list_news.html', news_items=news_items)
+    return render_template('list_news.html', news_items=news_items, app_name=app_name)
 
 
 @app.route('/news/<int:news_id>')
 def news_detail(news_id):
     news_item = News.query.get_or_404(news_id)
-    return render_template('news_detail.html', news_item=news_item)
+    return render_template('news_detail.html', news_item=news_item, app_name=app_name)
 
 
 @app.route('/news/edit/<int:news_id>', methods=['GET', 'POST'])
@@ -297,7 +306,44 @@ def edit_news(news_id):
         db.session.commit()
         return redirect(url_for('list_news'))
 
-    return render_template('edit_news.html', news_item=news_item)
+    return render_template('edit_news.html', news_item=news_item, app_name=app_name)
+
+
+@app.route('/team')
+def team():
+    team_members = TeamMember.query.filter_by(visible=True).all()
+    return render_template('team.html', team_members=team_members, app_name=app_name)
+
+
+@app.route('/team/add', methods=['GET', 'POST'])
+@requires_permission('leader')
+def add_team_member():
+    if request.method == 'POST':
+        name = request.form['name']
+        role = request.form['role']
+        file = request.files['file']
+        visible = 'visible' in request.form
+
+        if file and name and role:
+            filename = secure_filename(file.filename)
+            extension = filename.rsplit('.', 1)[1].lower()
+            new_filename = f"{name.replace(' ', '_').lower()}.{extension}"
+            file_path = os.path.join(app.config['UPLOAD_FOLDER_PICTS'], new_filename)
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            file.save(file_path)
+
+            new_team_member = TeamMember(name=name, role=role, profile_image=new_filename, visible=visible)
+            db.session.add(new_team_member)
+            db.session.commit()
+            return redirect(url_for('team'))
+
+    return render_template('add_team_member.html', app_name=app_name)
+
+
+@app.route('/team/<int:member_id>')
+def team_member_detail(member_id):
+    member = TeamMember.query.get_or_404(member_id)
+    return render_template('team_member_detail.html', member=member, app_name=app_name)
 
 
 if __name__ == '__main__':
