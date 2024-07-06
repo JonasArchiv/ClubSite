@@ -346,5 +346,38 @@ def team_member_detail(member_id):
     return render_template('team_member_detail.html', member=member, app_name=app_name)
 
 
+@app.route('/team/list')
+@requires_permission('leader')
+def list_team_members():
+    team_members = TeamMember.query.all()
+    return render_template('list_team_members.html', team_members=team_members, app_name=app_name)
+
+
+@app.route('/team/edit/<int:member_id>', methods=['GET', 'POST'])
+@requires_permission('leader')
+def edit_team_member(member_id):
+    member = TeamMember.query.get_or_404(member_id)
+
+    if request.method == 'POST':
+        member.name = request.form['name']
+        member.role = request.form['role']
+        member.visible = 'visible' in request.form
+
+        file = request.files['file']
+        if file:
+            filename = secure_filename(file.filename)
+            extension = filename.rsplit('.', 1)[1].lower()
+            new_filename = f"{member.name.replace(' ', '_').lower()}.{extension}"
+            file_path = os.path.join(app.config['UPLOAD_FOLDER_PICTS'], new_filename)
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            file.save(file_path)
+            member.profile_image = new_filename
+
+        db.session.commit()
+        return redirect(url_for('list_team_members'))
+
+    return render_template('edit_team_member.html', member=member, app_name=app_name)
+
+
 if __name__ == '__main__':
     app.run(debug=True)
