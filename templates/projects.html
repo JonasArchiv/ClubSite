@@ -1,23 +1,20 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Projektübersicht - {{ app_name }}</title>
+    <title>{{ app_name }} - Project List</title>
     <link rel="stylesheet" href="/static/bootstrap-5.3.3-dist/css/bootstrap.min.css">
 </head>
 <body>
     <div class="container mt-5">
-        <h2>Projektübersicht</h2>
-        <a href="/project/add" class="btn btn-primary">Neues Projekt hinzufügen</a>
-        <div class="mt-3">
+        <h2>Project List</h2>
+        <a href="{{ url_for('add_project') }}" class="btn btn-primary mb-3">Add Project</a>
+        <div class="list-group">
             {% for project in projects %}
-                <div class="card mt-2">
-                    <div class="card-body">
-                        <h5 class="card-title">{{ project.title }}</h5>
-                        <p class="card-text">{{ project.description }}</p>
-                        <a href="/project/{{ project.id }}" class="btn btn-secondary">Details ansehen</a>
-                    </div>
-                </div>
+            <a href="{{ url_for('edit_project', project_id=project.id) }}" class="list-group-item list-group-item-action">
+                <h5 class="mb-1">{{ project.title }}</h5>
+                <p class="mb-1">{{ project.description }}</p>
+            </a>
             {% endfor %}
         </div>
     </div>

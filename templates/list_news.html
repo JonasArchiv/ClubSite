@@ -1,24 +1,20 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>News - {{ app_name }}</title>
+    <title>{{ app_name }} - News List</title>
     <link rel="stylesheet" href="/static/bootstrap-5.3.3-dist/css/bootstrap.min.css">
 </head>
 <body>
     <div class="container mt-5">
-        <h2>News</h2>
-        <a href="/news/add" class="btn btn-primary">Neue News hinzufügen</a>
-        <div class="mt-3">
-            {% for news_item in news_items %}
-                <div class="card mt-2">
-                    <img src="{{ url_for('static', filename='uploads/' ~ news_item.image_path) }}" class="card-img-top" alt="{{ news_item.title }}">
-                    <div class="card-body">
-                        <h5 class="card-title">{{ news_item.title }}</h5>
-                        <p class="card-text">{{ news_item.description }}</p>
-                        <a href="/news/{{ news_item.id }}" class="btn btn-secondary">Details ansehen</a>
-                    </div>
-                </div>
+        <h2>News List</h2>
+        <a href="{{ url_for('add_news') }}" class="btn btn-primary mb-3">Add News</a>
+        <div class="list-group">
+            {% for news_item in news %}
+            <a href="{{ url_for('edit_news', news_id=news_item.id) }}" class="list-group-item list-group-item-action">
+                <h5 class="mb-1">{{ news_item.title }}</h5>
+                <p class="mb-1">{{ news_item.description }}</p>
+            </a>
             {% endfor %}
         </div>
     </div>

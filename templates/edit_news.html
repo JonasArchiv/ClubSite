@@ -1,28 +1,28 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Nachricht bearbeiten - {{ app_name }}</title>
+    <title>{{ app_name }} - Edit News</title>
     <link rel="stylesheet" href="/static/bootstrap-5.3.3-dist/css/bootstrap.min.css">
 </head>
 <body>
     <div class="container mt-5">
-        <h2>Nachricht bearbeiten</h2>
+        <h2>Edit News</h2>
         <form action="{{ url_for('edit_news', news_id=news_item.id) }}" method="post" enctype="multipart/form-data">
             <div class="mb-3">
-                <label for="title" class="form-label">Titel:</label>
+                <label for="title" class="form-label">Title:</label>
                 <input type="text" class="form-control" id="title" name="title" value="{{ news_item.title }}" required>
             </div>
             <div class="mb-3">
-                <label for="description" class="form-label">Beschreibung:</label>
+                <label for="description" class="form-label">Description:</label>
                 <textarea class="form-control" id="description" name="description" required>{{ news_item.description }}</textarea>
             </div>
             <div class="mb-3">
-                <label for="image" class="form-label">Bild:</label>
+                <label for="image" class="form-label">Image:</label>
                 <input type="file" class="form-control" id="image" name="image">
                 <img src="{{ url_for('static', filename='picts/' ~ news_item.image_path) }}" alt="Current Image" class="img-thumbnail mt-2" style="max-height: 200px;">
             </div>
-            <button type="submit" class="btn btn-primary">Nachricht speichern</button>
+            <button type="submit" class="btn btn-primary">Save News</button>
         </form>
     </div>
 </body>
